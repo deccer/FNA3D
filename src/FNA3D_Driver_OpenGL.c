@@ -182,6 +182,7 @@ typedef struct OpenGLRenderer /* Cast from FNA3D_Renderer* */
 	uint8_t supports_ARB_instanced_arrays;
 	uint8_t supports_ARB_draw_elements_base_vertex;
 	uint8_t supports_EXT_draw_buffers2;
+	uint8_t supports_EXT_texture_filter;
 	uint8_t supports_ARB_texture_multisample;
 	uint8_t supports_KHR_debug;
 	uint8_t supports_GREMEDY_string_marker;
@@ -3483,13 +3484,16 @@ static inline OpenGLTexture* OPENGL_INTERNAL_CreateTexture(
 			XNAToGL_MinMipFilter[result->filter] :
 			XNAToGL_MinFilter[result->filter]
 	);
-	renderer->glTexParameterf(
-		result->target,
-		GL_TEXTURE_MAX_ANISOTROPY_EXT,
-		(result->filter == FNA3D_TEXTUREFILTER_ANISOTROPIC) ?
-			SDL_max(result->anisotropy, 1.0f) :
-			1.0f
-	);
+	if (renderer->supports_EXT_texture_filter)
+	{
+		renderer->glTexParameterf(
+			result->target,
+			GL_TEXTURE_MAX_ANISOTROPY_EXT,
+			(result->filter == FNA3D_TEXTUREFILTER_ANISOTROPIC) ?
+				SDL_max(result->anisotropy, 1.0f) :
+				1.0f
+		);
+	}
 	renderer->glTexParameteri(
 		result->target,
 		GL_TEXTURE_BASE_LEVEL,
@@ -5425,6 +5429,12 @@ static inline void LoadEntryPoints(
 			renderer->supports_EXT_draw_buffers2 = 1;
 		}
 		#undef LOAD_COLORMASK
+	}
+	if (!renderer->supports_EXT_texture_filter)
+	{
+		FNA3D_LogError(
+			"EXT_texture_filter unsupported"
+		);
 	}
 
 	/* Possibly bogus if a game never uses render targets? */
